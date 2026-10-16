@@ -82,7 +82,6 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
   }
 
   Future<void> _loadWatchlist() async {
-    final saved = await _storage_service.getWatchlist();
     final saved = await _storageService.getWatchlist();
     
     // Remove any index symbols from watchlist (they belong in header only)
@@ -104,7 +103,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
         WatchlistItem(symbol: 'INFY', exchange: 'NSE'),
         WatchlistItem(symbol: 'TCS', exchange: 'NSE'),
       ]);
-      await _storageService.saveWatchlist(cleaned);
+      await _storage_service.saveWatchlist(cleaned);
     }
 
     setState(() {
@@ -193,7 +192,6 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
 
   Future<void> _fetchQuoteForItem(WatchlistItem item) async {
     try {
-      final quote = await _api_service.getQuote(item.symbol, item.exchange);
       final quote = await _apiService.getQuote(item.symbol, item.exchange);
       if (mounted) {
         setState(() {
@@ -488,21 +486,6 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
                                     width: 0.5,
                                   ),
                                 ),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(Icons.candlestick_chart, size: 18, color: AppTheme.accentBlue),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Chart',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: AppTheme.accentBlue,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                  ),
-                                ],
                               ),
                             ),
                           ),
