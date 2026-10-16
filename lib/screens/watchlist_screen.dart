@@ -42,14 +42,25 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
   }
 
   Future<void> _fetchAnalyzerStatus() async {
+    bool parseMode(dynamic v) {
+      if (v == null) return false;
+      if (v is bool) return v;
+      if (v is num) return v != 0;
+      final s = v.toString().toLowerCase();
+      return s == 'true' || s == '1' || s == 'yes' || s == 'on' || s == 'analyze' || s == 'analyzer' || s == 'live';
+    }
+
     try {
       final status = await _apiService.getAnalyzerStatus();
-      if (mounted) {
-        setState(() {
-          final data = status['data'] as Map<String, dynamic>;
-          _isAnalyzeMode = (data['mode'] ?? data['analyze_mode'] ?? data['analyzermode']) as bool? ?? false;
-        });
-      }
+      if (!mounted) return;
+
+      final data = status['data'] as Map<String, dynamic>? ?? {};
+      final dynamic modeRaw = data['analyze_mode'] ?? data['mode'] ?? data['analyzermode'];
+      final bool mode = parseMode(modeRaw);
+
+      setState(() {
+        _isAnalyzeMode = mode;
+      });
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error fetching analyzer status: $e');
@@ -71,6 +82,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
   }
 
   Future<void> _loadWatchlist() async {
+    final saved = await _storage_service.getWatchlist();
     final saved = await _storageService.getWatchlist();
     
     // Remove any index symbols from watchlist (they belong in header only)
@@ -181,6 +193,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
 
   Future<void> _fetchQuoteForItem(WatchlistItem item) async {
     try {
+      final quote = await _api_service.getQuote(item.symbol, item.exchange);
       final quote = await _apiService.getQuote(item.symbol, item.exchange);
       if (mounted) {
         setState(() {
@@ -687,8 +700,9 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
                         ),
                       ],
                     ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

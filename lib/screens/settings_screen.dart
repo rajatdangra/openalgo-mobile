@@ -22,6 +22,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late final OpenAlgoApiService _apiService;
+  final _storage_service = StorageService();
   final _storageService = StorageService();
   
   bool _isLoading = false;
@@ -93,23 +94,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _fetchAnalyzerStatus() async {
     setState(() => _isLoadingAnalyzerStatus = true);
+
+    bool parseMode(dynamic v) {
+      if (v == null) return false;
+      if (v is bool) return v;
+      if (v is num) return v != 0;
+      final s = v.toString().toLowerCase();
+      return s == 'true' || s == '1' || s == 'yes' || s == 'on' || s == 'analyze' || s == 'analyzer' || s == 'live';
+    }
+
     try {
       final status = await _apiService.getAnalyzerStatus();
-      if (mounted) {
-        setState(() {
-          // Support multiple field names: 'mode', 'analyze_mode', or 'analyzermode'
-          final data = status['data'] as Map<String, dynamic>;
-          _isAnalyzeMode = (data['mode'] ?? data['analyze_mode'] ?? data['analyzermode']) as bool? ?? false;
-          _isLoadingAnalyzerStatus = false;
-        });
-      }
+      if (!mounted) return;
+
+      final data = status['data'] as Map<String, dynamic>? ?? {};
+      final dynamic modeRaw = data['analyze_mode'] ?? data['mode'] ?? data['analyzermode'];
+      final bool mode = parseMode(modeRaw);
+
+      setState(() {
+        _isAnalyzeMode = mode;
+        _isLoadingAnalyzerStatus = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoadingAnalyzerStatus = false);
-      }
-      if (kDebugMode) {
-        debugPrint('Error fetching analyzer status: $e');
-      }
+      if (mounted) setState(() => _isLoadingAnalyzerStatus = false);
+      if (kDebugMode) debugPrint('Error fetching analyzer status: $e');
+      if (mounted) setState(() => _isAnalyzeMode = false);
     }
   }
 
@@ -129,6 +138,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             backgroundColor: value ? AppTheme.warningOrange : AppTheme.profitGreen,
           ),
         );
+
+        // Refresh account funds automatically after toggling mode
+        _fetchFunds();
       }
     } catch (e) {
       if (mounted) {
